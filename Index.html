@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown to PDF</title>
+<link rel="stylesheet" href="katex.min.css">
+<script src="katex.min.js"></script>
+<script src="markdown-it.min.js"></script>
+<script src="texmath.min.js"></script>
+<script src="markdown-it-footnote.min.js"></script>
+<script src="markdown-it-task-lists.min.js"></script>
+<script src="mermaid.min.js"></script>
+<script src="viz.js"></script>
+<script src="plotly.min.js"></script>
+<style>
+@font-face { font-family: 'ParsiMatn Web'; src: url('fonts/ParsiMatn-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'ParsiMatn Web'; src: url('fonts/ParsiMatn-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'ParsiMatn Web'; src: url('fonts/ParsiMatn-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'ParsiMatn Web'; src: url('fonts/ParsiMatn-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+:root {
+  --font-main: 'ParsiMatn Web', 'Parsi matn', Tahoma, sans-serif;
+  --font-size-main: 13pt; --line-height-main: 1.9;
+  --font-size-h1: 22pt; --font-size-h2: 18pt; --font-size-h3: 15pt;
+  --font-code: Consolas, monospace; --font-size-code: 10pt;
+  --font-size-math: 1.05em; --font-table: 'ParsiMatn Web', Tahoma, sans-serif;
+  --font-size-table: 12pt; --margin-page: 1.5rem;
+  --bg: #ffffff; --text: #222222; --muted: #666666; --border: #888888;
+  --light-bg: #f4f4f4; --code-bg: #f0f0f0; --quote-bg: #f9f9f9;
+  --link: #0066cc; --toolbar-bg: #f8f8f8;
+}
+body.dark {
+  --bg: #1a1a1a; --text: #e0e0e0; --muted: #999999; --border: #555555;
+  --light-bg: #252525; --code-bg: #2a2a2a; --quote-bg: #252525;
+  --link: #66b3ff; --toolbar-bg: #2a2a2a;
+}
+* { box-sizing: border-box; }
+html, body { scroll-behavior: smooth; }
+body { font-family: var(--font-main); direction: rtl; text-align: right; margin: 0; padding: var(--margin-page); line-height: var(--line-height-main); color: var(--text); background: var(--bg); font-size: var(--font-size-main); transition: background 0.2s, color 0.2s; }
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
+.tabs-bar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px 10px; background: var(--toolbar-bg); border: 1px solid var(--border); border-radius: 8px 8px 0 0; border-bottom: none; }
+.tab { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; cursor: pointer; font-size: 0.85rem; user-select: none; }
+.tab.active { background: var(--link); color: #fff; border-color: var(--link); }
+.tab .tab-close { font-size: 1rem; line-height: 1; opacity: 0.6; padding: 0 3px; border-radius: 3px; }
+.tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.2); }
+.tab-add { padding: 5px 12px; border: 1px dashed var(--border); background: transparent; border-radius: 5px; cursor: pointer; color: var(--text); font-size: 1rem; }
+.tab-add:hover { background: var(--light-bg); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; background: var(--toolbar-bg); border: 1px solid var(--border); border-radius: 0 0 8px 8px; margin-bottom: 12px; font-size: 0.9rem; }
+.toolbar button, .toolbar label { padding: 6px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; }
+.toolbar button:hover { background: var(--light-bg); }
+.toolbar input[type="file"] { display: none; }
+.toolbar .separator { flex-basis: 100%; height: 0; }
+.search-box { display: none; align-items: center; gap: 3px; padding: 3px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; }
+.search-box input { border: none; outline: none; background: transparent; color: var(--text); font-family: inherit; font-size: 0.85rem; width: 160px; padding: 3px 4px; }
+.search-box button { padding: 3px 6px !important; border: none !important; background: transparent !important; font-size: 0.85rem !important; }
+.search-box button:hover { background: var(--light-bg) !important; }
+#searchCount { font-size: 0.75rem; color: var(--muted); min-width: 34px; text-align: center; }
+.theme-switch-wrap { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; }
+.theme-switch-wrap .theme-label { font-size: 0.85rem; color: var(--text); display: inline-flex; align-items: center; gap: 3px; }
+.switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #bdbdbd; border-radius: 24px; transition: background 0.3s; }
+.switch .slider::before { content: ""; position: absolute; height: 18px; width: 18px; right: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.switch input:checked + .slider { background: #4a9eff; }
+.switch input:checked + .slider::before { transform: translateX(-22px); }
+textarea { width: 100%; height: 180px; direction: ltr; text-align: left; font-family: var(--font-code); font-size: 12px; padding: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px 5px 0 0; border-bottom: none; resize: vertical; }
+.status-bar { display: flex; gap: 18px; justify-content: flex-end; padding: 4px 12px; font-size: 0.75rem; color: var(--muted); background: var(--toolbar-bg); border: 1px solid var(--border); border-radius: 0 0 5px 5px; direction: rtl; }
+.status-bar .stat-num { color: var(--text); font-weight: bold; }
+.below-input-bar { display: flex; justify-content: center; margin-top: 8px; }
+.below-input-bar button { padding: 6px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit; font-size: 0.85rem; }
+.below-input-bar button:hover { background: var(--light-bg); }
+#preview-container { display: none; position: relative; margin-top: 12px; }
+#preview { border: 1px solid var(--border); padding: 1rem; border-radius: 6px; background: var(--bg); }
+#preview img { max-width: 100%; height: auto; display: block; margin: 1rem auto; }
+#preview table { border-collapse: collapse; width: 100%; margin: 1rem 0; direction: rtl; font-family: var(--font-table); font-size: var(--font-size-table); }
+#preview th, #preview td { border: 1px solid var(--border); padding: 6px 10px; text-align: right; }
+#preview th { background: var(--light-bg); font-weight: bold; }
+#preview tr:nth-child(even) { background: var(--quote-bg); }
+#preview pre { background: var(--code-bg); padding: .6rem; overflow-x: auto; direction: ltr; text-align: left; border-radius: 5px; border: 1px solid var(--border); font-family: var(--font-code); font-size: var(--font-size-code); }
+#preview code { background: var(--code-bg); padding: 2px 5px; border-radius: 3px; direction: ltr; font-family: var(--font-code); font-size: var(--font-size-code); }
+#preview pre code { background: transparent; padding: 0; }
+#preview blockquote { border-right: 4px solid var(--border); padding: .5rem 1rem .5rem .5rem; margin-right: 0; color: var(--muted); background: var(--quote-bg); border-radius: 4px; }
+#preview a { color: var(--link); text-decoration: none; }
+#preview a:hover { text-decoration: underline; }
+#preview a.wikilink { color: #8e44ad; font-weight: 500; border-bottom: 1px dashed #8e44ad; }
+#preview mark { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; }
+body.dark #preview mark { background: #b8860b; color: #fff; }
+#preview .callout { border-radius: 6px; padding: 10px 14px; margin: 1rem 0; border-right: 4px solid; background: var(--light-bg); }
+#preview .callout-title { font-weight: bold; margin-bottom: 6px; font-size: 1em; }
+#preview .callout-note { background: #e7f1ff; border-color: #4a90e2; }
+#preview .callout-warning { background: #fff6e0; border-color: #f5a623; }
+#preview .callout-danger, #preview .callout-error { background: #ffebee; border-color: #e74c3c; }
+#preview .callout-success, #preview .callout-tip { background: #e8f8ec; border-color: #27ae60; }
+#preview .callout-info { background: #e0f7fa; border-color: #00acc1; }
+body.dark #preview .callout-note { background: #1a3a5c; }
+body.dark #preview .callout-warning { background: #4a3a10; }
+body.dark #preview .callout-danger, body.dark #preview .callout-error { background: #4a1a1a; }
+body.dark #preview .callout-success, body.dark #preview .callout-tip { background: #1a3a20; }
+body.dark #preview .callout-info { background: #103a40; }
+#preview .katex { font-size: var(--font-size-math); }
+#preview .katex, #preview .katex * { direction: ltr !important; unicode-bidi: isolate !important; }
+#preview .katex-display, #preview .katex-display > .katex { direction: ltr !important; unicode-bidi: isolate !important; text-align: center; }
+#preview ul.contains-task-list { padding-right: 1.2rem; list-style: none; }
+#preview .task-list-item { list-style: none; margin-right: -0.4rem; }
+#preview .task-list-item input[type="checkbox"] { margin-left: 6px; transform: scale(1.1); vertical-align: middle; }
+#preview .footnotes { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.9em; color: var(--muted); }
+#preview .footnotes hr { display: none; }
+#preview .mermaid { direction: ltr; text-align: center; margin: 1rem 0; background: var(--bg); padding: 8px; border-radius: 6px; }
+#preview .graphviz { direction: ltr; text-align: center; margin: 1rem 0; background: var(--bg); padding: 8px; border-radius: 6px; overflow-x: auto; }
+#preview .graphviz svg { max-width: 100%; height: auto; }
+#preview .plotly-chart { width: 100%; min-height: 420px; margin: 1rem 0; direction: ltr; background: var(--bg); border-radius: 6px; overflow: hidden; }
+#preview .plotly-error { color: #c0392b; background: #ffebee; padding: 10px; border-radius: 6px; font-family: var(--font-code); font-size: 0.85rem; direction: ltr; text-align: left; }
+#preview mark.search-hl { background: #ffe066 !important; color: #000 !important; padding: 0 2px; border-radius: 2px; box-shadow: 0 0 0 1px #f5b800; }
+#preview mark.search-hl.active { background: #ff6600 !important; color: #fff !important; box-shadow: 0 0 0 2px #cc4400; }
+body.dark #preview mark.search-hl { background: #b8860b !important; color: #fff !important; }
+body.dark #preview mark.search-hl.active { background: #ff6600 !important; }
+body.dragging::after { content: "فایل را اینجا رها کنید"; position: fixed; inset: 0; background: rgba(0, 120, 200, 0.85); color: #fff; font-size: 2rem; display: flex; align-items: center; justify-content: center; z-index: 9999; pointer-events: none; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; transition: transform 0.3s; z-index: 10000; font-family: var(--font-main); max-width: 90%; text-align: center; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+#scrollTopBtn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); width: 48px; height: 48px; border-radius: 50%; background: var(--link); color: #fff; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.25); opacity: 0; pointer-events: none; transition: transform 0.3s ease, opacity 0.3s ease, background 0.2s; z-index: 9998; display: flex; align-items: center; justify-content: center; padding: 0; font-family: inherit; }
+#scrollTopBtn.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+body.reading .tabs-bar, body.reading textarea, body.reading .input-label, body.reading .status-bar, body.reading .below-input-bar { display: none !important; }
+body.reading .toolbar > *:not(#readingBtn):not(.search-box) { display: none !important; }
+body.reading .toolbar { position: sticky; top: 0; z-index: 9000; justify-content: center; gap: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+body.reading #readingBtn { background: var(--link); color: #fff; border-color: var(--link); font-size: 0.95rem; padding: 8px 18px; }
+body.reading .search-box { display: inline-flex; }
+body.reading #preview-container { display: block !important; margin-top: 0; }
+@page { size: A4; margin: 15mm 12mm 20mm 12mm; @bottom-center { content: "صفحه " counter(page) " از " counter(pages); font-family: 'ParsiMatn Web', Tahoma, sans-serif; font-size: 9pt; color: #666; direction: rtl; } }
+@media print {
+  .toolbar, textarea, body > h2, .toast, .tabs-bar, .input-label, .status-bar, .below-input-bar, #scrollTopBtn { display: none !important; }
+  body { padding: 0; margin: 0; background: #fff; color: #000; }
+  #preview-container { display: block !important; margin-top: 0; }
+  #preview { border: none; margin: 0; padding: 0; }
+  #preview .mermaid, #preview .graphviz, #preview .callout, #preview .plotly-chart { page-break-inside: avoid; }
+  #preview pre, #preview table, #preview blockquote { page-break-inside: avoid; }
+  #preview h1, #preview h2, #preview h3 { page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="tabs-bar" id="tabsBar"></div>
+<div class="toolbar">
+  <button id="readingBtn" onclick="toggleReading()">📖 حالت خواندن</button>
+  <button onclick="document.getElementById('fileInput').click()">📂 بارگذاری MD</button>
+  <input type="file" id="fileInput" accept=".md,.markdown,.txt">
+  <button onclick="exportHTML()">💾 ذخیره HTML</button>
+  <button onclick="window.print()">🖨 ذخیره PDF</button>
+  <span class="separator"></span>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="جستجو (Enter)..." onkeydown="onSearchKey(event)">
+    <button onclick="searchPrev()">▲</button>
+    <button onclick="searchNext()">▼</button>
+    <span id="searchCount"></span>
+    <button onclick="clearSearch(); document.getElementById('searchInput').value = '';">×</button>
+  </div>
+  <span class="theme-switch-wrap">
+    <span class="theme-label" id="themeLabel">🌙 تم تاریک</span>
+    <label class="switch">
+      <input type="checkbox" id="chk-theme" onchange="onOptionChange()">
+      <span class="slider"></span>
+    </label>
+  </span>
+</div>
+<h2 class="input-label">متن Markdown را اینجا پیست کنید:</h2>
+<textarea id="input" placeholder="متن مارک‌داون خود را اینجا بچسبانید..."></textarea>
+<div class="status-bar">
+  <span>کلمات: <span class="stat-num" id="stat-words">0</span></span>
+  <span>کاراکترها: <span class="stat-num" id="stat-chars">0</span></span>
+  <span>خطوط: <span class="stat-num" id="stat-lines">0</span></span>
+</div>
+<div class="below-input-bar">
+  <button onclick="clearInput()">🗑 پاک کردن ورودی</button>
+</div>
+<div id="preview-container"><div id="preview"></div></div>
+<button id="scrollTopBtn" onclick="scrollToTop()">▲</button>
+<div class="toast" id="toast"></div>
+<script>
+// ===== IndexedDB =====
+var IDB_NAME = 'md2pdf-state';
+var IDB_STORE = 'state';
+var _idbReady = null;
+function idbOpen() {
+  if (_idbReady) return _idbReady;
+  _idbReady = new Promise(function(resolve, reject) {
+    var req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = function(e) {
+      if (!e.target.result.objectStoreNames.contains(IDB_STORE)) e.target.result.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+  return _idbReady;
+}
+async function idbSave(obj) {
+  try {
+    var db = await idbOpen();
+    return new Promise(function(res, rej) {
+      var tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(obj, 'state');
+      tx.oncomplete = function(){ res(); };
+      tx.onerror = function(){ rej(tx.error); };
+    });
+  } catch(e) { console.warn('idbSave', e); }
+}
+async function idbLoad() {
+  try {
+    var db = await idbOpen();
+    return new Promise(function(res, rej) {
+      var tx = db.transaction(IDB_STORE, 'readonly');
+      var req = tx.objectStore(IDB_STORE).get('state');
+      req.onsuccess = function(){ res(req.result); };
+      req.onerror = function(){ rej(req.error); };
+    });
+  } catch(e) { return null; }
+}
+// ===== پایان IndexedDB =====
+const STATE_KEY = 'md2pdf-state-v24';
+let state = {
+  tabs: [{ id: 't1', name: 'تب ۱', content: '' }],
+  activeTabId: 't1',
+  options: { dark: false, reading: false }
+};
+// ✅ FIX 1: electronAPI.saveTemp از saveState حذف شد — این‌جا خیلی زیاد صدا زده می‌شد
+function saveState() {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(e) {}
+  clearTimeout(window.__idb_t);
+  window.__idb_t = setTimeout(function() { idbSave(state); }, 800);
+}
+async function loadState() {
+  var idbState = await idbLoad();
+  if (idbState && idbState.tabs && idbState.tabs.length && idbState.options) {
+    state = idbState;
+    return;
+  }
+  try {
+    var s = localStorage.getItem(STATE_KEY);
+    if (s) { var p = JSON.parse(s); if (p && p.tabs && p.tabs.length && p.options) state = p; }
+  } catch(e) {}
+}
+function markdownItMark(md) {
+  md.inline.ruler.before('emphasis', 'mark', function(state, silent) {
+    const start = state.pos;
+    if (state.src.charCodeAt(start) !== 0x3D || state.src.charCodeAt(start + 1) !== 0x3D) return false;
+    const end = state.src.indexOf('==', start + 2);
+    if (end === -1 || end === start + 2) return false;
+    if (!silent) {
+      state.push('mark_open', 'mark', 1);
+      const tok = state.push('text', '', 0);
+      tok.content = state.src.slice(start + 2, end);
+      state.push('mark_close', 'mark', -1);
+    }
+    state.pos = end + 2;
+    return true;
+  });
+}
+function markdownItWikilink(md) {
+  md.inline.ruler.before('link', 'wikilink', function(state, silent) {
+    const start = state.pos;
+    if (state.src.charCodeAt(start) !== 0x5B || state.src.charCodeAt(start + 1) !== 0x5B) return false;
+    const end = state.src.indexOf(']]', start + 2);
+    if (end === -1) return false;
+    const inner = state.src.slice(start + 2, end);
+    let target = inner, label = inner;
+    const pipeIdx = inner.indexOf('|');
+    if (pipeIdx !== -1) { target = inner.slice(0, pipeIdx).trim(); label = inner.slice(pipeIdx + 1).trim(); }
+    if (!silent) {
+      const o = state.push('link_open', 'a', 1);
+      o.attrs = [['href', '#' + target], ['class', 'wikilink']];
+      const t = state.push('text', '', 0); t.content = label;
+      state.push('link_close', 'a', -1);
+    }
+    state.pos = end + 2;
+    return true;
+  });
+}
+function markdownItPlotly(md) {
+  const def = md.renderer.rules.fence || function(t, i, o, e, s) { return s.renderToken(t, i, o); };
+  md.renderer.rules.fence = function(tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    const info = (token.info || '').trim().toLowerCase().split(/\s+/)[0];
+    if (info === 'plotly' || info === 'plot-function' || info === 'plot-surface') {
+      const id = 'plotly-' + Math.random().toString(36).substr(2, 9);
+      let cls = 'plotly-chart';
+      if (info === 'plot-function') cls += ' plotly-function';
+      if (info === 'plot-surface') cls += ' plotly-surface';
+      return '<div class="' + cls + '" id="' + id + '" data-config="' + encodeURIComponent(token.content) + '"></div>';
+    }
+    return def(tokens, idx, options, env, self);
+  };
+}
+const md = markdownit({
+  html: true, linkify: true, breaks: false, typographer: false,
+  tables: true, strikethrough: true
+})
+.use(texmath, { engine: katex, delimiters: 'dollars', katexOptions: { throwOnError: false, strict: false, trust: true } })
+.use(markdownitFootnote)
+.use(markdownitTaskLists, { enabled: true, label: true })
+.use(markdownItMark)
+.use(markdownItWikilink)
+.use(markdownItPlotly);
+function fixLatex(text) {
+  text = text.replace(/\\\\\s*\\hline\b/g, '\\\\\n\\hline\n');
+  text = text.replace(/\\hline[ \t]+(?=\S)/g, '\\hline\n');
+  text = text.replace(/\\hline(?=\S)/g, '\\hline\n');
+  return text;
+}
+let lastRenderedHTML = '';
+function render() {
+  const ta = document.getElementById('input');
+  const tab = state.tabs.find(t => t.id === state.activeTabId);
+  if (tab) tab.content = ta.value;
+  lastRenderedHTML = md.render(fixLatex(ta.value));
+  updatePreview();
+  updateStatusBar();
+  saveState();
+}
+function updatePreview() {
+  const c = document.getElementById('preview');
+  c.innerHTML = lastRenderedHTML;
+  processCallouts(c);
+  renderDiagrams();
+  renderPlotlyCharts();
+}
+const CALLOUT_META = {
+  note: { icon: '📘', title: 'نکته' }, info: { icon: 'ℹ️', title: 'اطلاعات' },
+  warning: { icon: '⚠️', title: 'هشدار' }, danger: { icon: '🚨', title: 'خطر' },
+  error: { icon: '⛔', title: 'خطا' }, success: { icon: '✅', title: 'موفقیت' },
+  tip: { icon: '💡', title: 'راهنمایی' }, question: { icon: '❓', title: 'سؤال' },
+  example: { icon: '📝', title: 'مثال' }, quote: { icon: '💬', title: 'نقل‌قول' },
+  abstract: { icon: '📋', title: 'چکیده' }, summary: { icon: '📋', title: 'خلاصه' },
+  tldr: { icon: '⚡', title: 'خلاصه' }, bug: { icon: '🐛', title: 'اشکال' },
+  failure: { icon: '❌', title: 'شکست' }
+};
+function processCallouts(container) {
+  container.querySelectorAll('blockquote').forEach(function(bq) {
+    var firstP = bq.querySelector('p');
+    if (!firstP) return;
+    var html = firstP.innerHTML;
+    var m = html.match(/^\s*\[!(\w+)\]([+-])?\s*([^\n<]*)/);
+    if (!m) return;
+    var type = m[1].toLowerCase();
+    var meta = CALLOUT_META[type] || { icon: '📌', title: type };
+    var userTitle = (m[3] || '').trim();
+    var title = userTitle || meta.title;
+    var restHtml = html.substring(m[0].length).replace(/^\s+/, '');
+    if (restHtml.trim()) { firstP.innerHTML = restHtml; } else { firstP.remove(); }
+    var div = document.createElement('div');
+    div.className = 'callout callout-' + type;
+    var header = document.createElement('div');
+    header.className = 'callout-title'; header.textContent = meta.icon + ' ' + title;
+    var content = document.createElement('div');
+    content.className = 'callout-content';
+    while (bq.firstChild) { content.appendChild(bq.firstChild); }
+    div.appendChild(header); div.appendChild(content);
+    bq.replaceWith(div);
+  });
+}
+async function renderDiagrams() {
+  const c = document.getElementById('preview');
+  if (!c) return;
+  const mb = c.querySelectorAll('pre > code.language-mermaid');
+  if (mb.length > 0 && window.mermaid) {
+    mb.forEach(function(code) {
+      const d = document.createElement('div'); d.className = 'mermaid'; d.textContent = code.textContent;
+      code.parentElement.replaceWith(d);
+    });
+    const isDark = document.body.classList.contains('dark');
+    mermaid.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default', securityLevel: 'loose', fontFamily: 'Tahoma, sans-serif' });
+    try { await mermaid.run({ querySelector: '#preview .mermaid' }); } catch(e) { console.error('Mermaid error:', e); }
+  }
+  const gv = c.querySelectorAll('pre > code.language-dot, pre > code.language-graphviz');
+  if (gv.length > 0 && typeof Viz !== 'undefined') {
+    gv.forEach(function(code) {
+      try {
+        const svg = Viz(code.textContent, { format: 'svg' });
+        const d = document.createElement('div'); d.className = 'graphviz'; d.innerHTML = svg;
+        code.parentElement.replaceWith(d);
+      } catch(e) {
+        const err = document.createElement('div'); err.style.color = 'red'; err.textContent = 'Graphviz error: ' + e.message;
+        code.parentElement.replaceWith(err);
+      }
+    });
+  }
+}
+function renderPlotlyCharts() {
+  if (typeof Plotly === 'undefined') return;
+  const c = document.getElementById('preview');
+  if (!c) return;
+  const isDark = document.body.classList.contains('dark');
+  const fg = isDark ? '#e0e0e0' : '#222222';
+  const bg = isDark ? '#1a1a1a' : '#ffffff';
+  const gr = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+  c.querySelectorAll('.plotly-chart').forEach(function(el) {
+    try {
+      const raw = decodeURIComponent(el.dataset.config);
+      let data, layout;
+      if (el.classList.contains('plotly-function')) { const p = parseFunctionConfig(raw); data = p.data; layout = p.layout; }
+      else if (el.classList.contains('plotly-surface')) { const p = parseSurfaceConfig(raw); data = p.data; layout = p.layout; }
+      else {
+        const p = JSON.parse(raw);
+        if (Array.isArray(p)) { data = p; layout = {}; }
+        else { data = p.data || []; layout = p.layout || {}; }
+      }
+      const bl = {
+        paper_bgcolor: bg, plot_bgcolor: bg, font: { color: fg, family: 'Tahoma, sans-serif', size: 13 },
+        margin: { t: 50, r: 30, b: 50, l: 60 },
+        xaxis: Object.assign({ gridcolor: gr, zerolinecolor: gr, color: fg }, layout.xaxis || {}),
+        yaxis: Object.assign({ gridcolor: gr, zerolinecolor: gr, color: fg }, layout.yaxis || {}),
+        legend: Object.assign({ font: { color: fg } }, layout.legend || {}),
+        title: Object.assign({ font: { color: fg, size: 16 } }, layout.title || {})
+      };
+      Object.keys(layout).forEach(function(k) { if (['xaxis','yaxis','legend','title'].indexOf(k) === -1) bl[k] = layout[k]; });
+      if (layout.scene) bl.scene = Object.assign({ xaxis: { color: fg, gridcolor: gr }, yaxis: { color: fg, gridcolor: gr }, zaxis: { color: fg, gridcolor: gr }, bgcolor: bg }, layout.scene);
+      Plotly.newPlot(el, data, bl, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] });
+    } catch(e) { el.innerHTML = '<div class="plotly-error">خطا: ' + escapeHtml(e.message) + '</div>'; }
+  });
+}
+function parseFunctionConfig(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  let expr = null, xMin = -10, xMax = 10, points = 300, title = '';
+  const uv = {}, bv = { pi: Math.PI, e: Math.E };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^y\s*=/i.test(line)) expr = line.substring(line.indexOf('=') + 1).trim();
+    else if (/^x\s*:/i.test(line)) { const m = line.match(/([-\d.eE+]+)\s*(?:to|تا|,|–)\s*([-\d.eE+]+)/); if (m) { xMin = parseFloat(m[1]); xMax = parseFloat(m[2]); } }
+    else if (/^points?\s*:/i.test(line)) { points = parseInt(line.split(':')[1].trim(), 10); if (isNaN(points) || points < 2) points = 300; if (points > 5000) points = 5000; }
+    else if (/^title\s*:/i.test(line)) title = line.substring(line.indexOf(':') + 1).trim();
+  }
+  if (!expr) throw new Error('معادله پیدا نشد');
+  expr = expr.replace(/\\/g, '').replace(/\^/g, '**');
+  const fns = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh','tanh','exp','log','log10','log2','log1p','sqrt','cbrt','abs','floor','ceil','round','sign','pow','min','max','hypot','trunc'];
+  const an = ['x'].concat(Object.keys(uv), Object.keys(bv), fns);
+  const av = [0].concat(Object.values(uv), Object.values(bv), fns.map(n => Math[n]));
+  let fn; try { fn = new Function(an.join(','), 'return (' + expr + ');'); } catch(e) { throw new Error('معادله معتبر نیست: ' + e.message); }
+  const xs = [], ys = [];
+  const dx = (xMax - xMin) / (points - 1);
+  for (let i = 0; i < points; i++) {
+    const x = xMin + i * dx; av[0] = x;
+    let y; try { y = fn.apply(null, av); } catch(e) { continue; }
+    if (typeof y === 'number' && isFinite(y)) { xs.push(x); ys.push(y); }
+  }
+  return { data: [{ x: xs, y: ys, type: 'scatter', mode: 'lines', line: { width: 2.5, color: '#4a9eff', shape: 'spline', smoothing: 1.3 } }],
+    layout: { title: { text: title || ('y = ' + expr) }, xaxis: { title: { text: 'x' } }, yaxis: { title: { text: 'y' } } } };
+}
+function parseSurfaceConfig(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  let expr = null, xMin = -5, xMax = 5, yMin = -5, yMax = 5, points = 60, title = '', colorscale = 'Viridis';
+  const bv = { pi: Math.PI, e: Math.E };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^z\s*=/i.test(line)) expr = line.substring(line.indexOf('=') + 1).trim();
+    else if (/^x\s*:/i.test(line)) { const m = line.match(/([-\d.eE+]+)\s*(?:to|تا|,|–)\s*([-\d.eE+]+)/); if (m) { xMin = parseFloat(m[1]); xMax = parseFloat(m[2]); } }
+    else if (/^y\s*:/i.test(line)) { const m = line.match(/([-\d.eE+]+)\s*(?:to|تا|,|–)\s*([-\d.eE+]+)/); if (m) { yMin = parseFloat(m[1]); yMax = parseFloat(m[2]); } }
+    else if (/^points?\s*:/i.test(line)) { points = parseInt(line.split(':')[1].trim(), 10); if (isNaN(points) || points < 5) points = 60; if (points > 150) points = 150; }
+    else if (/^title\s*:/i.test(line)) title = line.substring(line.indexOf(':') + 1).trim();
+    else if (/^colorscale\s*:/i.test(line)) colorscale = line.substring(line.indexOf(':') + 1).trim();
+  }
+  if (!expr) throw new Error('معادله پیدا نشد');
+  expr = expr.replace(/\\/g, '').replace(/\^/g, '**');
+  const fns = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh','tanh','exp','log','log10','sqrt','abs','floor','ceil','round','sign','pow','min','max'];
+  const an = ['x','y'].concat(Object.keys(bv), fns);
+  const av = [0, 0].concat(Object.values(bv), fns.map(n => Math[n]));
+  let fn; try { fn = new Function(an.join(','), 'return (' + expr + ');'); } catch(e) { throw new Error('معادله معتبر نیست: ' + e.message); }
+  const xs = [], ys = [], zs = [];
+  const dx = (xMax - xMin) / (points - 1);
+  const dy = (yMax - yMin) / (points - 1);
+  for (let i = 0; i < points; i++) { xs.push(xMin + i * dx); ys.push(yMin + i * dy); }
+  for (let j = 0; j < points; j++) {
+    const row = [];
+    for (let i = 0; i < points; i++) {
+      av[0] = xs[i]; av[1] = ys[j];
+      let z; try { z = fn.apply(null, av); } catch(e) { z = 0; }
+      row.push(typeof z === 'number' && isFinite(z) ? z : 0);
+    }
+    zs.push(row);
+  }
+  return { data: [{ type: 'surface', x: xs, y: ys, z: zs, colorscale: colorscale, contours: { z: { show: true, usecolormap: true, highlightcolor: '#ffffff', project: { z: true } } }, colorbar: { title: 'f(x,y)' } }],
+    layout: { title: { text: title || ('z = ' + expr) }, scene: { xaxis: { title: { text: 'x' } }, yaxis: { title: { text: 'y' } }, zaxis: { title: { text: 'z' } } } } };
+}
+function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderTabs() {
+  const bar = document.getElementById('tabsBar');
+  bar.innerHTML = '';
+  state.tabs.forEach(function(tab) {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === state.activeTabId ? ' active' : '');
+    el.onclick = function(e) { if (e.target.classList.contains('tab-close')) return; switchTab(tab.id); };
+    const n = document.createElement('span');
+    n.className = 'tab-name'; n.textContent = tab.name;
+    n.ondblclick = function(e) {
+      e.stopPropagation();
+      const nn = prompt('نام جدید:', tab.name);
+      if (nn && nn.trim()) { tab.name = nn.trim(); saveState(); renderTabs(); }
+    };
+    el.appendChild(n);
+    if (state.tabs.length > 1) {
+      const c = document.createElement('span');
+      c.className = 'tab-close'; c.textContent = '×';
+      c.onclick = function(e) { e.stopPropagation(); closeTab(tab.id); };
+      el.appendChild(c);
+    }
+    bar.appendChild(el);
+  });
+  const a = document.createElement('button');
+  a.className = 'tab-add'; a.textContent = '+';
+  a.onclick = addTab;
+  bar.appendChild(a);
+}
+function switchTab(id) {
+  const c = state.tabs.find(function(t){return t.id === state.activeTabId;});
+  if (c) c.content = document.getElementById('input').value;
+  state.activeTabId = id;
+  const nt = state.tabs.find(function(t){return t.id === id;});
+  document.getElementById('input').value = nt ? nt.content : '';
+  clearSearch(); document.getElementById('searchInput').value = '';
+  saveState(); renderTabs(); render();
+}
+function addTab() {
+  if (state.tabs.length >= 10) { showToast('حداکثر ۱۰ تب'); return; }
+  const c = state.tabs.find(function(t){return t.id === state.activeTabId;});
+  if (c) c.content = document.getElementById('input').value;
+  const id = 't' + Date.now();
+  state.tabs.push({ id: id, name: 'تب ' + (state.tabs.length + 1), content: '' });
+  state.activeTabId = id;
+  document.getElementById('input').value = '';
+  clearSearch(); document.getElementById('searchInput').value = '';
+  saveState(); renderTabs(); render();
+  document.getElementById('input').focus();
+}
+function closeTab(id) {
+  if (state.tabs.length <= 1) return;
+  const i = state.tabs.findIndex(function(t){return t.id === id;});
+  if (i === -1) return;
+  if (!confirm('این تب حذف شود؟')) return;
+  state.tabs.splice(i, 1);
+  if (state.activeTabId === id) state.activeTabId = state.tabs[Math.max(0, i - 1)].id;
+  const nt = state.tabs.find(function(t){return t.id === state.activeTabId;});
+  document.getElementById('input').value = nt ? nt.content : '';
+  clearSearch(); document.getElementById('searchInput').value = '';
+  saveState(); renderTabs(); render();
+}
+function clearInput() {
+  document.getElementById('input').value = '';
+  const t = state.tabs.find(function(x){return x.id === state.activeTabId;});
+  if (t) t.content = '';
+  lastRenderedHTML = '';
+  updatePreview(); updateStatusBar();
+  clearSearch(); document.getElementById('searchInput').value = '';
+  saveState();
+  if (window.electronAPI) window.electronAPI.saveTemp('');
+  showToast('ورودی پاک شد');
+}
+function onOptionChange() {
+  const wd = document.body.classList.contains('dark');
+  state.options.dark = document.getElementById('chk-theme').checked;
+  document.body.classList.toggle('dark', state.options.dark);
+  document.getElementById('themeLabel').textContent = state.options.dark ? '☀️ تم روشن' : '🌙 تم تاریک';
+  clearSearchHighlights();
+  document.getElementById('searchCount').textContent = '';
+  saveState();
+  updatePreview();
+  if (wd !== state.options.dark) { renderDiagrams(); renderPlotlyCharts(); }
+}
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (f) loadFile(f);
+  e.target.value = '';
+});
+function loadFile(file) {
+  const r = new FileReader();
+  r.onload = function(e) {
+    document.getElementById('input').value = e.target.result;
+    const t = state.tabs.find(function(x){return x.id === state.activeTabId;});
+    if (t) t.content = e.target.result;
+    clearSearch(); document.getElementById('searchInput').value = '';
+    saveState(); render();
+    if (!state.options.reading) {
+      state.options.reading = true;
+      document.body.classList.add('reading');
+      document.getElementById('readingBtn').textContent = '📝 خروج از حالت خواندن';
+      saveState();
+    }
+    showToast('بارگذاری شد: ' + file.name);
+  };
+  r.readAsText(file, 'UTF-8');
+}
+let dc = 0;
+document.addEventListener('dragenter', function(e){ e.preventDefault(); dc++; if (dc === 1) document.body.classList.add('dragging'); });
+document.addEventListener('dragover', function(e){ e.preventDefault(); });
+document.addEventListener('dragleave', function(e){ e.preventDefault(); dc--; if (dc <= 0) { dc = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('drop', function(e) {
+  e.preventDefault(); dc = 0; document.body.classList.remove('dragging');
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  if (/\.(md|markdown|txt)$/i.test(f.name)) loadFile(f);
+  else showToast('فقط فایل‌های .md');
+});
+function toggleReading() {
+  state.options.reading = !state.options.reading;
+  if (state.options.reading) {
+    const raw = document.getElementById('input').value;
+    lastRenderedHTML = md.render(fixLatex(raw));
+    updatePreview();
+    setTimeout(function(){ const s = document.getElementById('searchInput'); if (s) s.focus(); }, 100);
+  } else {
+    clearSearch(); document.getElementById('searchInput').value = '';
+    updateScrollTopBtn();
+  }
+  document.body.classList.toggle('reading', state.options.reading);
+  document.getElementById('readingBtn').textContent = state.options.reading ? '📝 خروج از حالت خواندن' : '📖 حالت خواندن';
+  saveState();
+}
+function updateStatusBar() {
+  const t = document.getElementById('input').value;
+  document.getElementById('stat-words').textContent = (t.trim() === '' ? 0 : t.trim().split(/\s+/).length).toLocaleString('fa-IR');
+  document.getElementById('stat-chars').textContent = t.length.toLocaleString('fa-IR');
+  document.getElementById('stat-lines').textContent = (t.length === 0 ? 0 : t.split('\n').length).toLocaleString('fa-IR');
+}
+let searchMatches = [], searchIndex = -1;
+function onSearchKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+  else if (e.key === 'Escape') { clearSearch(); document.getElementById('searchInput').value = ''; }
+}
+function runSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { clearSearchHighlights(); document.getElementById('searchCount').textContent = ''; return; }
+  const raw = document.getElementById('input').value;
+  lastRenderedHTML = md.render(fixLatex(raw));
+  updatePreview();
+  setTimeout(searchPreview, 200);
+}
+function searchPreview() {
+  clearSearchHighlights();
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { document.getElementById('searchCount').textContent = ''; return; }
+  const c = document.getElementById('preview');
+  if (!c) return;
+  const w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = node.parentNode;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.tagName === 'SCRIPT' || p.tagName === 'STYLE') return NodeFilter.FILTER_REJECT;
+      if (p.classList && p.classList.contains('search-hl')) return NodeFilter.FILTER_REJECT;
+      if (p.closest && p.closest('.mermaid, .graphviz, .plotly-chart')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while (n = w.nextNode()) nodes.push(n);
+  const lq = q.toLowerCase();
+  nodes.forEach(function(tn) {
+    const text = tn.nodeValue, lt = text.toLowerCase();
+    let li = 0, idx; const parts = [];
+    while ((idx = lt.indexOf(lq, li)) !== -1) {
+      if (idx > li) parts.push({ text: text.slice(li, idx), match: false });
+      parts.push({ text: text.slice(idx, idx + q.length), match: true });
+      li = idx + q.length;
+    }
+    if (parts.length === 0) return;
+    if (li < text.length) parts.push({ text: text.slice(li), match: false });
+    const f = document.createDocumentFragment();
+    parts.forEach(function(p) {
+      if (p.match) {
+        const m = document.createElement('mark');
+        m.className = 'search-hl'; m.textContent = p.text;
+        f.appendChild(m); searchMatches.push(m);
+      } else f.appendChild(document.createTextNode(p.text));
+    });
+    if (tn.parentNode) tn.parentNode.replaceChild(f, tn);
+  });
+  if (searchMatches.length > 0) { searchIndex = 0; focusMatch(); }
+  else document.getElementById('searchCount').textContent = '۰';
+}
+function clearSearchHighlights() {
+  const p = document.getElementById('preview');
+  if (!p) return;
+  p.querySelectorAll('mark.search-hl').forEach(function(m) {
+    const par = m.parentNode;
+    if (par) { par.replaceChild(document.createTextNode(m.textContent), m); par.normalize(); }
+  });
+  searchMatches = []; searchIndex = -1;
+}
+function clearSearch() { clearSearchHighlights(); document.getElementById('searchCount').textContent = ''; }
+function updateSearchCount() {
+  const e = document.getElementById('searchCount');
+  e.textContent = searchMatches.length === 0 ? '' : (searchIndex + 1) + '/' + searchMatches.length;
+}
+function focusMatch() {
+  searchMatches.forEach(function(m){ m.classList.remove('active'); });
+  if (searchMatches[searchIndex]) {
+    searchMatches[searchIndex].classList.add('active');
+    const tb = document.querySelector('.toolbar');
+    const off = (state.options.reading && tb) ? tb.offsetHeight + 20 : 80;
+    const el = searchMatches[searchIndex];
+    const r = el.getBoundingClientRect();
+    const y = window.pageYOffset + r.top - off;
+    try { window.scrollTo({ top: y, behavior: 'smooth' }); } catch(e) { window.scrollTo(0, y); }
+  }
+  updateSearchCount();
+}
+function searchNext() { if (searchMatches.length === 0) { runSearch(); return; } searchIndex = (searchIndex + 1) % searchMatches.length; focusMatch(); }
+function searchPrev() { if (searchMatches.length === 0) { runSearch(); return; } searchIndex = (searchIndex - 1 + searchMatches.length) % searchMatches.length; focusMatch(); }
+function updateScrollTopBtn() {
+  const b = document.getElementById('scrollTopBtn');
+  if (!b) return;
+  if (window.pageYOffset > 200) b.classList.add('visible');
+  else b.classList.remove('visible');
+}
+function scrollToTop() { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) { window.scrollTo(0, 0); } }
+window.addEventListener('scroll', updateScrollTopBtn);
+window.addEventListener('resize', updateScrollTopBtn);
+function extractCSSForExport() {
+  var result = '';
+  document.querySelectorAll('style').forEach(function(s) {
+    if (s.id === 'print-style') return;
+    var txt = s.textContent;
+    txt = txt.replace(/@page\s*\{[\s\S]*?\n\s*\}\s*\n/g, '');
+    result += txt + '\n';
+  });
+  return result;
+}
+function exportHTML() {
+  const p = document.getElementById('preview');
+  if (!p.innerHTML.trim()) { showToast('اول محتوا را وارد کن'); return; }
+  if (searchMatches.length > 0) clearSearchHighlights();
+  const cs = extractCSSForExport();
+  const katexFix = '.katex,.katex *,.katex-display{direction:ltr !important;unicode-bidi:isolate !important;}.katex .katex-mathml,.katex-mathml{position:absolute !important;clip:rect(1px,1px,1px,1px) !important;padding:0 !important;border:0 !important;height:1px !important;width:1px !important;overflow:hidden !important;white-space:nowrap !important;}';
+  const html = '<!DOCTYPE html><html dir="rtl" lang="fa"><head><meta charset="UTF-8"><title>Export</title><link rel="stylesheet" href="katex.min.css"><style>' + cs + '</style><style>' + katexFix + '</style><style>' + '\nbody{padding:2rem;}\n.toolbar,textarea,.input-label,.tabs-bar,.toast,.status-bar,#scrollTopBtn{display:none !important;}\n#preview-container{display:block !important;}\n#preview{border:none;}\n</style></head><body><div id="preview-container"><div id="preview">' + p.innerHTML + '</div></div></body></html>';
+  const b = new Blob([html], { type: 'text/html;charset=utf-8' });
+  downloadBlob(b, suggestName() + '.html');
+  showToast('HTML ذخیره شد');
+}
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+function suggestName() {
+  const t = state.tabs.find(function(x){return x.id === state.activeTabId;});
+  const base = t ? t.name.replace(/[^\w\u0600-\u06FF-]+/g, '_') : 'document';
+  const d = new Date();
+  return base + '_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+let toastTimer = null;
+function showToast(msg, duration) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, duration || 2500);
+}
+document.addEventListener('keydown', function(e) {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  if (k === 's') { e.preventDefault(); exportHTML(); }
+  else if (k === 'p') { e.preventDefault(); window.print(); }
+  else if (k === 'b') { e.preventDefault(); toggleReading(); }
+});
+window.addEventListener('DOMContentLoaded', async function() {
+  await loadState();
+  // ✅ FIX 3: اول state.tabs رو مقداردهی کن
+  const at = state.tabs.find(function(t){return t.id === state.activeTabId;}) || state.tabs[0];
+  state.activeTabId = at.id;
+  let initialContent = at.content || '';
+  // ✅ FIX 2: temp رو بعد از state بخون و state.tabs رو هم آپدیت کن
+  if (window.electronAPI) {
+    try {
+      const tempText = await window.electronAPI.loadTemp();
+      if (tempText && tempText.trim()) {
+        initialContent = tempText;
+        at.content = tempText;
+      }
+    } catch(e) { console.warn('loadTemp', e); }
+  }
+  document.getElementById('input').value = initialContent;
+  document.getElementById('chk-theme').checked = !!state.options.dark;
+  document.body.classList.toggle('dark', !!state.options.dark);
+  document.getElementById('themeLabel').textContent = state.options.dark ? '☀️ تم روشن' : '🌙 تم تاریک';
+  if (state.options.reading) {
+    document.body.classList.add('reading');
+    document.getElementById('readingBtn').textContent = '📝 خروج از حالت خواندن';
+  }
+  renderTabs();
+  // ✅ FIX 4: فقط یک بار رندر — قبلاً دو بار می‌شد
+  lastRenderedHTML = md.render(fixLatex(initialContent));
+  updatePreview();
+  updateStatusBar();
+  let rt = null;
+  document.getElementById('input').addEventListener('input', function() {
+    const t = state.tabs.find(function(x){return x.id === state.activeTabId;});
+    if (t) t.content = document.getElementById('input').value;
+    updateStatusBar();
+    clearTimeout(window.__st);
+    window.__st = setTimeout(saveState, 400);
+    // ✅ FIX 1: debounce برای temp — نه هر keystroke
+    if (window.electronAPI) {
+      clearTimeout(window.__st_tmp);
+      window.__st_tmp = setTimeout(function() {
+        window.electronAPI.saveTemp(document.getElementById('input').value);
+      }, 500);
+    }
+    clearTimeout(rt);
+    rt = setTimeout(function() {
+      clearSearchHighlights();
+      document.getElementById('searchCount').textContent = '';
+      lastRenderedHTML = md.render(fixLatex(document.getElementById('input').value));
+      updatePreview();
+    }, 300);
+  });
+  updateScrollTopBtn();
+  setTimeout(checkLibraries, 500);
+});
+function checkLibraries() {
+  const m = [];
+  if (typeof markdownit === 'undefined') m.push('markdown-it');
+  if (typeof katex === 'undefined') m.push('KaTeX');
+  if (typeof markdownitFootnote === 'undefined') m.push('markdown-it-footnote');
+  if (typeof markdownitTaskLists === 'undefined') m.push('markdown-it-task-lists');
+  if (typeof mermaid === 'undefined') m.push('Mermaid');
+  if (typeof Viz === 'undefined') m.push('Viz.js');
+  if (typeof Plotly === 'undefined') m.push('Plotly');
+  if (m.length > 0) showToast('لود نشدند: ' + m.join(', '), 8000);
+}
+</script>
+<script src="renderer.js"></script>
+</body>
+</html>
