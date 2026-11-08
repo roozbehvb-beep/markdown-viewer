@@ -17,6 +17,28 @@ jobs:
         with:
           node-version: 18
 
+      - name: Download all library files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Write-Host "Downloading KaTeX (with fonts)..."
+          Invoke-WebRequest -Uri "https://github.com/KaTeX/KaTeX/releases/download/v0.16.9/katex.zip" -OutFile "katex.zip"
+          Expand-Archive katex.zip -DestinationPath katex_tmp -Force
+          Copy-Item "katex_tmp/katex/*" -Destination "." -Recurse -Force
+          Remove-Item katex.zip, katex_tmp -Recurse -Force
+
+          Write-Host "Downloading other libraries..."
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/markdown-it@13.0.2/dist/markdown-it.min.js" -OutFile "markdown-it.min.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/markdown-it-texmath@1.0.0/texmath.min.js" -OutFile "texmath.min.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/markdown-it-footnote@3.0.3/dist/markdown-it-footnote.min.js" -OutFile "markdown-it-footnote.min.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/markdown-it-task-lists@2.1.1/dist/markdown-it-task-lists.min.js" -OutFile "markdown-it-task-lists.min.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" -OutFile "mermaid.min.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/viz.js@2.1.2/viz.js" -OutFile "viz.js"
+          Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.27.0/plotly.min.js" -OutFile "plotly.min.js"
+
+          Write-Host "Downloaded files:"
+          Get-ChildItem *.js, *.css | Select-Object Name, Length | Format-Table
+
       - name: Install dependencies
         run: npm install
 
@@ -27,4 +49,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MarkdownViewer-Win7-32bit
-          path: dist/*.exe
+          path: dist/
+          if-no-files-found: error
